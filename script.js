@@ -16,8 +16,6 @@ const map = new mapboxgl.Map({
     zoom: 12 // starting zoom level
 });
 
-
-
 /*--------------------------------------------------------------------
 Step 2: VIEW GEOJSON POINT DATA ON MAP
 --------------------------------------------------------------------*/
@@ -25,7 +23,14 @@ Step 2: VIEW GEOJSON POINT DATA ON MAP
 //      Use the fetch method to access the GeoJSON from your online repository
 //      Convert the response to JSON format and then store the response in your new variable
 
+let collisiongeojson;
 
+fetch('https://raw.githubusercontent.com/anna-hein25/GGR472-lab4/ed29c9a264739fa82c90f146cd79e08eac577133/pedcyc_collision_06-21.geojson')
+    .then(response => response.json())
+    .then(response => {
+        console.log(response);
+        collisiongeojson = response;
+    });
 
 /*--------------------------------------------------------------------
     Step 3: CREATE BOUNDING BOX AND HEXGRID
@@ -35,24 +40,77 @@ Step 2: VIEW GEOJSON POINT DATA ON MAP
 //      Access and store the bounding box coordinates as an array variable
 //      Use bounding box coordinates as argument in the turf hexgrid function
 
+map.on('load', () => {
 
+    let bboxgeojson;
+    let bbox = turf.envelope(collisiongeojson);
+    let bboxscaled = turf.transformScale(bbox, 1.10);
 
-/*--------------------------------------------------------------------
-Step 4: AGGREGATE COLLISIONS BY HEXGRID
---------------------------------------------------------------------*/
-//HINT: Use Turf collect function to collect all '_id' properties from the collision points data for each heaxagon
-//      View the collect output in the console. Where there are no intersecting points in polygons, arrays will be empty
+    bboxgeojson = {
+        'type': 'FeatureCollection',
+        'features': [bbox]
+    };
 
+    let bboxcoords = [bboxscaled.geometry.coordinates[0][0][0],
+    bboxscaled.geometry.coordinates[0][0][1],
+    bboxscaled.geometry.coordinates[0][2][0],
+    bboxscaled.geometry.coordinates[0][2][1],];
+    let hexgeojson = turf.hexGrid(bboxcoords, 0.5, { units: 'kilometers' });
 
+    /*--------------------------------------------------------------------
+    Step 4: AGGREGATE COLLISIONS BY HEXGRID
+    --------------------------------------------------------------------*/
+    //HINT: Use Turf collect function to collect all '_id' properties from the collision points data for each heaxagon
+    //      View the collect output in the console. Where there are no intersecting points in polygons, arrays will be empty
 
-// /*--------------------------------------------------------------------
-// Step 5: FINALIZE YOUR WEB MAP
-// --------------------------------------------------------------------*/
-//HINT: Think about the display of your data and usability of your web map.
-//      Update the addlayer paint properties for your hexgrid using:
-//        - an expression
-//        - The COUNT attribute
-//        - The maximum number of collisions found in a hexagon
-//      Add a legend and additional functionality including pop-up windows
+    let collishex = turf.collect(hexgeojson, collisiongeojson, '_id', 'values');
 
+    let maxcollis = 0;
 
+    collishex.features.forEach((feature) => {
+        feature.properties.COUNT = feature.properties.values.length
+        if (feature.properties.COUNT > maxcollis) {
+            console.log(feature);
+            maxcollis = feature.properties.COUNT
+        }
+    });
+
+    // /*--------------------------------------------------------------------
+    // Step 5: FINALIZE YOUR WEB MAP
+    // --------------------------------------------------------------------*/
+    //HINT: Think about the display of your data and usability of your web map.
+    //      Update the addlayer paint properties for your hexgrid using:
+    //        - an expression
+    //        - The COUNT attribute
+    //        - The maximum number of collisions found in a hexagon
+    //      Add a legend and additional functionality including pop-up windows
+
+    map.addSource('collision-hex', {
+        type: 'geojson',
+        data: hexgeojson
+    });
+
+    map.addLayer({
+        'id': 'collision-hex-fill',
+        'type': 'fill',
+        'source': 'collision-hex',
+        'paint': {
+            'fill-color': [
+                'step',
+                ['get', 'COUNT'],
+                '#800026',
+                10, '#bd0026',
+                25, '#e31a1c'
+            ],
+            'fill-opacity': 0.5,
+            'fill-outline-color': "white"
+        }
+    });
+});
+
+map.on('click', 'collis-hex-fill', (e) => {
+    new mapboxgl.Popup()
+    .setLngLat(e.lngLat)
+    .setHTML("<b>Collision count:<b>" + e.features[0].properties.COUNT)
+    .addTo(map);
+})
