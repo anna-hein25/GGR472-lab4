@@ -1,2 +1,2 @@
-# GGR472-lab4
-Incorporating GIS Analysis into web maps using Turf.js
+# Map Representation of Pedestrian Collisions in Toronto
+Using Turf.js, the script.js file in this repository incorporates GIS analysis into web maps. More specifically, it adds GeoJSON point data to a map and creates a bounding box and hexgrid around those points. Furthermore, a section of the code aggregates points based on the hexgrid. Finally, a popup window is coded into the website, which illustrates the pedestrian collision point of each hexagon. The HTML file displays the map container as well as the legend. The style.css file styles the map container and legend with specific characteristics.
