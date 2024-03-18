@@ -1,14 +1,14 @@
 /*--------------------------------------------------------------------
-GGR472 LAB 4: Incorporating GIS Analysis into web maps using Turf.js 
+GGR472 LAB 4: Map Representation of Pedestrian Collisions in Toronto 
 --------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------
-Step 1: INITIALIZE MAP
+Part 1: Creating a map frame
 --------------------------------------------------------------------*/
 // defining access token
 mapboxgl.accessToken = 'pk.eyJ1IjoiYW5uYS1oZWluMSIsImEiOiJjbHMyOWllNW8wa2J3MmpsZHM1eHk0b3oxIn0.9g1JErkZTD4sg70-swx-YQ';
 
-// Initializing map
+// creating a map container specially referenced around Toronto and initializing the map
 const map = new mapboxgl.Map({
     container: 'map', // container id in HTML
     style: 'mapbox://styles/anna-hein1/cltq8azbv024r01qp54by1bkc',
@@ -17,9 +17,9 @@ const map = new mapboxgl.Map({
 });
 
 /*--------------------------------------------------------------------
-Step 2: VIEW GEOJSON POINT DATA ON MAP
+Part 2: Adding geojson point data to the map
 --------------------------------------------------------------------*/
-
+// the following code adds the pedestrian collision geojson point data onto the map
 let collisiongeojson;
 
 fetch('https://raw.githubusercontent.com/anna-hein25/GGR472-lab4/ed29c9a264739fa82c90f146cd79e08eac577133/pedcyc_collision_06-21.geojson')
@@ -30,9 +30,9 @@ fetch('https://raw.githubusercontent.com/anna-hein25/GGR472-lab4/ed29c9a264739fa
     });
 
 /*--------------------------------------------------------------------
-    Step 3: CREATE BOUNDING BOX AND HEXGRID
+Part 3: Creating a bounding box and hexgrid 
 --------------------------------------------------------------------*/
-
+// this code creates a rectangle box that consists of hexagons to encase the pedestrian collision points
 map.on('load', () => {
 
     let bboxgeojson;
@@ -45,17 +45,16 @@ map.on('load', () => {
     };
 
     let bboxcoords = [bboxscaled.geometry.coordinates[0][0][0],
-    bboxscaled.geometry.coordinates[0][0][1],
-    bboxscaled.geometry.coordinates[0][2][0],
-    bboxscaled.geometry.coordinates[0][2][1],];
-    let hexgeojson = turf.hexGrid(bboxcoords, 0.3, { units: 'kilometers' });
+                    bboxscaled.geometry.coordinates[0][0][1],
+                    bboxscaled.geometry.coordinates[0][2][0],
+                    bboxscaled.geometry.coordinates[0][2][1],];
+   let hexgeojson = turf.hexGrid(bboxcoords, 0.3, { units: 'kilometers' });
 
-    /*--------------------------------------------------------------------
-    Step 4: AGGREGATE COLLISIONS BY HEXGRID
-    --------------------------------------------------------------------*/
-
+/*--------------------------------------------------------------------
+Part 4: Aggregating collisions by hexgrid
+--------------------------------------------------------------------*/
+// this section of the code counts the number of collision points and clusters them based on the hexagons in the hexgrid
     let collishex = turf.collect(hexgeojson, collisiongeojson, '_id', 'values');
-
     let maxcollis = 0;
 
     collishex.features.forEach((feature) => {
@@ -66,10 +65,10 @@ map.on('load', () => {
         }
     });
 
-    /*--------------------------------------------------------------------
-    Step 5: FINALIZE YOUR WEB MAP
-    --------------------------------------------------------------------*/
-
+/*--------------------------------------------------------------------
+Part 5: Finalizing my web map
+--------------------------------------------------------------------*/
+// the code below displays the code above on the web map page
     map.addSource('collision-hex', {
         type: 'geojson',
         data: hexgeojson
